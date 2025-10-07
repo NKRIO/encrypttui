@@ -1,0 +1,5 @@
+/target
+/cfgbuilder/config.json
+/cfgbuilder/files
+/cfgbuilder/node_modules/
+/src/cfg.rs

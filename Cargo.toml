@@ -1,0 +1,18 @@
+[package]
+name = "encrypttui"
+authors = [ "IOU-KR" ]
+version = "0.1.0"
+edition = "2024"
+description = "show terminal ui on decrypting arch linux LUKS root"
+license = "MIT"
+readme = "README.md"
+categories = ["command-line-interface"]
+keywords = ["linux", "encryption", "terminal", "cli"]
+
+[profile.release]
+codegen-units = 1
+lto = "thin"
+strip = "symbols"
+
+[dependencies]
+crossterm = "0.29.0"
