@@ -1,7 +1,7 @@
 {
   "name": "encrypttui-config-builder",
   "version": "0.1.0",
-  "description": "Port the configuration file written in JSONC to encrypttui.",
+  "description": "Convert configuration file written in JSONC to cfg.rs in encrypttui.",
   "main": "index.js",
   "author": "IOU-KR",
   "license": "GPL-3.0",
