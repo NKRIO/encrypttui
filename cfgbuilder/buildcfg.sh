@@ -6,9 +6,10 @@ if [ ! -d "../src/" ]; then
   echo "The directory, ../src/ does not exists"
   exit 1
 fi
+
 if [ ! -f "config.jsonc" ]; then
   echo "The file, config.jsonc dose not exists"
   exit 1
-else
-  node index.js config.jsonc -o ../src/cfg.rs
 fi
+
+node index.js config.jsonc -o ../src/cfg.rs
