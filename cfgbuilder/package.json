@@ -4,7 +4,7 @@
   "description": "Port the configuration file written in JSONC to encrypttui.",
   "main": "index.js",
   "author": "IOU-KR",
-  "license": "GPL3.0",
+  "license": "GPL-3.0",
   "dependencies": {
     "jsonc": "^2.0.0"
   }
