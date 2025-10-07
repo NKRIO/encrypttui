@@ -11,7 +11,33 @@ const JSONC = require("jsonc");
 //==============PARSE CONFIG FILE ==============//
 //==============================================//
 
-const config_path = process.argv[2]??"config.json";
+let config_path = "config.json";
+let output_path;
+
+let flag = true;
+process.argv.slice(2).forEach(arg=>{
+  if(flag){
+    if(arg==="--help"){
+      console.log(
+        "Usage: node index.js [CONFIG_PATH] [OPTIONS]...\n"+
+        "Convert configuration file written in JSONC to cfg.rs in encrypttui.\n\n"+
+        "Options:\n"+
+        "    --help        Print help\n"+
+        "    -o, --output  Set output file path"
+      );
+      process.exit(0);
+    }
+    if(arg==="-o"||arg==="--output"){
+      output_path = true;
+      return;
+    }
+  }else if(arg==="-"){
+    flag = false;
+    return;
+  }
+  if(output_path===true) output_path = arg;
+  else config_path = arg;
+});
 
 if(!fs.existsSync(config_path)){
   console.error(`[Error] (Reading config) ${config_path} do not exists.`);
@@ -276,5 +302,6 @@ pub const TRY_INTERVAL: u64 = ${(()=>{
   return 100;
 })()};
 `;
-
-console.log(out);
+if(output_path){
+  fs.writeFileSync(output_path,out);
+}else console.log(out);
