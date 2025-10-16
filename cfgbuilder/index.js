@@ -145,6 +145,35 @@ function getAnsiLength(str) {
   return out;
 }
 
+function truncateVisible(str, max_len, start_index){
+  let result = "";
+  let visible_count = 0;
+
+  for(let i=0; i<str.length; i++) {
+    const c = str[i];
+    if(c === '\x1B') {
+      result+=c;
+      while(i<str.length) {
+        i++;
+        const c2 = str[i];
+        result+=c2;
+        if(ansiEnds.some(end => end === c2)) {
+          /*if(c2 === 'm')*/ break;
+        }
+      }
+    } else {
+      if (visible_count < max_len) {
+        if(visible_count>=start_index)
+          result+=c;
+        visible_count += 1;
+      } else {
+         break;
+      }
+    }
+  }
+  return result;
+}
+
 function getSize(ascii){
   const splited = ascii.split("\n");
   return {
@@ -383,19 +412,19 @@ pub const START_POSITION_Y: i16 = ${shape.start_position.y};
 
 pub const LEFT_INPUT: &'static [&'static str; ${shape_splited.length}] = &[
 ${(() =>
-  shape_splited.map(line => `  "${makeSafety(line.substring(0, shape.start_position.x)??" ")}",`).join("\n")
+  shape_splited.map(line => `  "${makeSafety(truncateVisible(line, shape.start_position.x,0)??" ")}",`).join("\n")
 )()}
 ];
 
 pub const MIDDLE_INPUT: &'static [char; ${shape_splited.length}] = &[
 ${(() =>
-  shape_splited.map(line => `  '${makeSafety(line[shape.start_position.x]??" ")}',`).join("\n")
+  shape_splited.map(line => `  '${makeSafetyChar(line[truncateVisible(line, shape.start_position.x,0).length]??" ")}',`).join("\n")
 )()}
 ];
 
 pub const RIGHT_INPUT: &'static [&'static str; ${shape_splited.length}] = &[
 ${(() =>
-  shape_splited.map(line => `  "${makeSafetyChar(line.substring(shape.start_position.x+1)??" ")}",`).join("\n")
+  shape_splited.map(line => `  "${makeSafety(truncateVisible(line,line.length,shape.start_position.x+1)??" ")}",`).join("\n")
 )()}
 ];
 

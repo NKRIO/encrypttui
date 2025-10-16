@@ -201,9 +201,12 @@ fn show_input_screen() -> String {
             let repeated_middle: Vec<String> = MIDDLE_INPUT.iter().map(|&c| c.to_string().repeat(length)).collect();
 
             clear_attr!();
-            draw_ansi_at(LEFT_INPUT, posx, posy, col_32, row_32);
-            draw_ansi_at(&repeated_middle, posx+start_position_x, posy, col_32, row_32);
-            draw_ansi_at(RIGHT_INPUT, maxx-right_input_length, posy, col_32, row_32);
+            for i in 0..LEFT_INPUT.len() {
+                let posy = posy + i as i16;
+                draw_ansi_at(&[&LEFT_INPUT[i]], posx, posy, col_32, row_32);
+                draw_ansi_at(&[&repeated_middle[i]], posx+start_position_x, posy, col_32, row_32);
+                draw_ansi_at(&[&RIGHT_INPUT[i]], maxx-right_input_length, posy, col_32, row_32);
+            }
 
             move_to!(posx+start_position_x+1,posy+START_POSITION_Y+START_POSITION_Y);
             print!("{}", BEFORE_INPUT_START);
