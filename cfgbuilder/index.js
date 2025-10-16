@@ -95,10 +95,10 @@ function getPosition(position, flip){
     if(isNaN(denominator)) throw Error(`The denominator is not a number: "${position}"`);
     if(denominator===0) throw Error(`The denominator can not be zero: "${position}"`);
     return {
-      numerator: position.numerator,
-      denominator: position.denominator,
+      numerator,
+      denominator,
       absolute: 0,
-        flip
+      flip
     };
   }
   throw Error(`Can not parse the value: ${position}`);
