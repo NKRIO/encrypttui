@@ -8,7 +8,14 @@ use encrypttui::cfg::{
     CRYPTDEVICE_UUID,
     CRYPTNAME,
     TRY_TIMES,
-    TRY_INTERVAL
+    TRY_INTERVAL,
+
+    START_POSITION_Y,
+    LEFT_INPUT,
+    MIDDLE_INPUT,
+    RIGHT_INPUT,
+    BEFORE_INPUT_START,
+    PASSWORD_CHAR,
 };
 
 use crossterm::{
@@ -40,7 +47,7 @@ fn read_password(max_show_length: usize) -> String {
                 KeyCode::Char(c) => {
                     password.push(c);
                     if password.len()<=max_show_length {
-                        print!("*");
+                        print!("{}", PASSWORD_CHAR);
                         stdout.flush().unwrap();
                     }
                 },
@@ -63,10 +70,10 @@ fn read_password(max_show_length: usize) -> String {
     password
 }
 
-fn truncate_visible(s: &str, max_len: u32, start_index: u32) -> String {
+fn truncate_visible<T: AsRef<str>>(s: T, max_len: u32, start_index: u32) -> String {
     let mut result = String::new();
     let mut visible_count: u32 = 0;
-    let mut chars = s.chars().peekable();
+    let mut chars = s.as_ref().chars().peekable();
 
     while let Some(c) = chars.next() {
         // encrypttui supports ANSI escaping, `\x1B[m` ONLY
@@ -99,6 +106,28 @@ fn truncate_visible(s: &str, max_len: u32, start_index: u32) -> String {
     result
 }
 
+fn get_ansi_length(s: &str) -> i16 {
+    let mut visible_count: i16 = 0;
+    let mut chars = s.chars().peekable();
+
+    while let Some(c) = chars.next() {
+        // encrypttui supports ANSI escaping, `\x1B[m` ONLY
+        if c == '\x1B' {
+            // ANSI starts
+            while let Some(&next) = chars.peek() {
+                chars.next();
+                if next == 'm'/* || next == 'K'*/ {
+                    break;
+                }
+            }
+        } else {
+            visible_count += 1;
+        }
+    }
+
+    visible_count
+}
+
 fn calc_pos(x_or_y: &Position, col_or_row: u16) -> i16 {
     if x_or_y.denominator == 0 {
         return (if x_or_y.flip {col_or_row as i16 - x_or_y.absolute} else {x_or_y.absolute}) as i16;
@@ -122,63 +151,62 @@ macro_rules! clear_attr {
     };
 }
 
+fn draw_ansi_at<T: AsRef<str>>(ansi: &[T], posx: i16, posy: i16, col: i32, row: i32){
+
+    let maxx: i32 = col - posx as i32;
+    let maxy: i32 = row - posy as i32;
+    if maxx <= 0 || maxy <= 0 {
+        return;
+    }
+    let mut y = if posy<0 {1} else {posy + 1};
+    let x = if posx<0 {1} else {posx + 1};
+    for i in (if posy<0 {-posy as usize} else {0})..(ansi.len().min(row as usize)) {
+        move_to!(x, y);
+        let out = truncate_visible(ansi[i].as_ref(), maxx as u32, if posx<0 {-posx as u32} else {0});
+        print!("{}",out);
+        y += 1;
+    }
+}
+
 fn show_input_screen() -> String {
     let out_password: String;
     clear_console!();
 
     match crossterm::terminal::size() {
     Ok((col,row)) => {
+        let col_32 = col as i32;
+        let row_32 = row as i32;
         for layer in LAYERS.iter() {
             let posx = calc_pos(&layer.position.0, col) - layer.origin.0 as i16;
             let posy = calc_pos(&layer.position.1, row) - layer.origin.1 as i16;
-            let maxx: i32 = col as i32 - posx as i32;
-            let maxy: i32 = row as i32 - posy as i32;
-            if maxx <= 0 || maxy <= 0 {
-                continue;
-            }
-            let mut y = if posy<0 {1} else {posy + 1};
-            let x = if posx<0 {1} else {posx + 1};
             clear_attr!();
-            for i in (if posy<0 {-posy as usize} else {0})..(layer.ascii.len().min(row as usize)) {
-                move_to!(x, y);
-                let out = truncate_visible(layer.ascii[i], maxx as u32, if posx<0 {-posx as u32} else {0});
-                print!("{}",out);
-                y += 1;
-            }
+            draw_ansi_at(&layer.ascii, posx, posy, col_32, row_32);
         }
         // Draw password input field
         let posx = calc_pos(&INPUT_LEFT, col);
         let maxx = calc_pos(&INPUT_RIGHT, col);
-        let posy = calc_pos(&INPUT_POS, row) - if INPUT_POS.flip {3} else {0};
+        let posy = calc_pos(&INPUT_POS, row) - START_POSITION_Y;
 
-        let length = maxx-posx-2;
+        let start_position_x = get_ansi_length(&LEFT_INPUT[0]);
+        let right_input_length = get_ansi_length(&RIGHT_INPUT[0]);
+
+        let length = maxx-posx-right_input_length-start_position_x;
 
         // If password input field is too small, don't draw it.
-        if length<1 || row-(posy as u16)<4 || posy<0 {
+        if length<1 {
             out_password = read_password(0);
         } else {
             let length = length as usize;
-            let top_and_bottom: String = std::iter::repeat('-').take(length).collect(); 
-            let middle: String = std::iter::repeat(' ').take(length).collect();
+
+            let repeated_middle: Vec<String> = MIDDLE_INPUT.iter().map(|&c| c.to_string().repeat(length)).collect();
 
             clear_attr!();
+            draw_ansi_at(LEFT_INPUT, posx, posy, col_32, row_32);
+            draw_ansi_at(&repeated_middle, posx+start_position_x, posy, col_32, row_32);
+            draw_ansi_at(RIGHT_INPUT, maxx-right_input_length, posy, col_32, row_32);
 
-            move_to!(posx,posy);
-            print!(",");
-            print!("{}",&top_and_bottom);
-            print!(",");
-
-            move_to!(posx,posy+1);
-            print!("|");
-            print!("{}",middle);
-            print!("|");
-
-            move_to!(posx,posy+2);
-            print!("'");
-            print!("{}",top_and_bottom);
-            print!("'");
-
-            move_to!(posx+1,posy+1);
+            move_to!(posx+start_position_x+1,posy+START_POSITION_Y+START_POSITION_Y);
+            print!("{}", BEFORE_INPUT_START);
 
             out_password = read_password(length);
         }
