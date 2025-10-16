@@ -13,6 +13,7 @@ const JSONC = require("jsonc");
 
 let config_path = "config.json";
 let output_path;
+let ignore_debug = false;
 
 let flag = true;
 process.argv.slice(2).forEach(arg=>{
@@ -23,12 +24,18 @@ process.argv.slice(2).forEach(arg=>{
         "Convert configuration file written in JSONC to cfg.rs in encrypttui.\n\n"+
         "Options:\n"+
         "    --help        Print help\n"+
-        "    -o, --output  Set output file path"
+        "    -o, --output  Set output file path\n"+
+        "    -i, --ignore-debug\n"+
+        "                  Ignore `\"debug\": true`"
       );
       process.exit(0);
     }
     if(arg==="-o"||arg==="--output"){
       output_path = true;
+      return;
+    }
+    if(arg==="-i"||arg==="--ignore-debug"){
+      ignore_debug = true;
       return;
     }
   }else if(arg==="-"){
@@ -274,7 +281,7 @@ pub const INPUT_POS: Position = Position {
     flip: ${input_pos.flip}
 };
 
-pub const DEBUG: bool = ${config.debug??false};
+pub const DEBUG: bool = ${(!ignore_debug)&&config.debug};
 
 pub const CRYPTDEVICE_UUID: &str = "${makeSafety(config.cryptdevice_uuid)}";
 pub const CRYPTNAME: &str = "${makeSafety(config.cryptname)}";
