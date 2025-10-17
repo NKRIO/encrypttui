@@ -211,7 +211,7 @@ fn show_input_screen() -> String {
                 print!("{}", &RIGHT_INPUT[i]);
             }
             clear_attr!();
-            move_to!(posx+start_position_x+1,posy+START_POSITION_Y);
+            move_to!(posx+start_position_x,posy+START_POSITION_Y);
             print!("{}", BEFORE_INPUT_START);
             out_password = read_password(length);
         }
