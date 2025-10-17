@@ -130,14 +130,14 @@ fn get_ansi_length(s: &str) -> i16 {
 
 fn calc_pos(x_or_y: &Position, col_or_row: u16) -> i16 {
     if x_or_y.denominator == 0 {
-        return (if x_or_y.flip {col_or_row as i16 - x_or_y.absolute} else {x_or_y.absolute}) as i16;
+        return (if x_or_y.flip {col_or_row as i16 - x_or_y.absolute - 1} else {x_or_y.absolute}) as i16;
     }
     let out: i16 = (col_or_row as f64 * x_or_y.numerator as f64 / x_or_y.denominator as f64).ceil() as i16;
     if x_or_y.flip {col_or_row as i16 - 1 - out} else {out}
 }
 macro_rules! move_to {
     ($col:expr, $row:expr) => {
-        print!("\x1B[{};{}H", $row, $col);
+        print!("\x1B[{};{}H", $row+1, $col+1);
     };
 }
 macro_rules! clear_console {
@@ -151,15 +151,16 @@ macro_rules! clear_attr {
     };
 }
 
-fn draw_ansi_at<T: AsRef<str>>(ansi: &[T], posx: i16, posy: i16, col: i32, row: i32){
 
+fn draw_ansi_at<T: AsRef<str>>(ansi: &[T], posx: i16, posy: i16, col: i32, row: i32){
     let maxx: i32 = col - posx as i32;
+    if maxx <= 0 {return;}
     let maxy: i32 = row - posy as i32;
-    if maxx <= 0 || maxy <= 0 {
-        return;
-    }
-    let mut y = if posy<0 {1} else {posy + 1};
-    let x = if posx<0 {1} else {posx + 1};
+    if maxy <= 0 {return;}
+
+    let mut y = if posy<0 {0} else {posy};
+    let x = if posx<0 {0} else {posx};
+
     for i in (if posy<0 {-posy as usize} else {0})..(ansi.len().min(row as usize)) {
         move_to!(x, y);
         let out = truncate_visible(ansi[i].as_ref(), maxx as u32, if posx<0 {-posx as u32} else {0});
@@ -185,7 +186,7 @@ fn show_input_screen() -> String {
         // Draw password input field
         let posx = calc_pos(&INPUT_LEFT, col);
         let maxx = calc_pos(&INPUT_RIGHT, col);
-        let posy = calc_pos(&INPUT_POS, row);
+        let posy = calc_pos(&INPUT_POS, row); // password input start position
 
         let start_position_x = get_ansi_length(&LEFT_INPUT[0]);
         let right_input_length = get_ansi_length(&RIGHT_INPUT[0]);
@@ -202,16 +203,15 @@ fn show_input_screen() -> String {
 
             clear_attr!();
             for i in 0..LEFT_INPUT.len() {
-                let posy = posy + i as i16;
-                move_to!(posx, posy);
-                print!("{}", &LEFT_INPUT[i]);
-                move_to!(posx+start_position_x, posy);
-                print!("{}", &repeated_middle[i]);
-                move_to!(maxx-right_input_length, posy);
-                print!("{}", &RIGHT_INPUT[i]);
+                let posy = posy + i as i16 - START_POSITION_Y;
+
+                draw_ansi_at(&[&LEFT_INPUT[i]], posx, posy, col_32, row_32);
+                draw_ansi_at(&[&repeated_middle[i]], posx+start_position_x, posy, col_32, row_32);
+                draw_ansi_at(&[&RIGHT_INPUT[i]], maxx-right_input_length, posy, col_32, row_32);
+                
             }
             clear_attr!();
-            move_to!(posx+start_position_x,posy+START_POSITION_Y);
+            move_to!(posx+start_position_x,posy);
             print!("{}", BEFORE_INPUT_START);
             out_password = read_password(length);
         }
