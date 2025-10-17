@@ -185,7 +185,7 @@ fn show_input_screen() -> String {
         // Draw password input field
         let posx = calc_pos(&INPUT_LEFT, col);
         let maxx = calc_pos(&INPUT_RIGHT, col);
-        let posy = calc_pos(&INPUT_POS, row) - START_POSITION_Y;
+        let posy = calc_pos(&INPUT_POS, row);
 
         let start_position_x = get_ansi_length(&LEFT_INPUT[0]);
         let right_input_length = get_ansi_length(&RIGHT_INPUT[0]);
@@ -203,14 +203,16 @@ fn show_input_screen() -> String {
             clear_attr!();
             for i in 0..LEFT_INPUT.len() {
                 let posy = posy + i as i16;
-                draw_ansi_at(&[&LEFT_INPUT[i]], posx, posy, col_32, row_32);
-                draw_ansi_at(&[&repeated_middle[i]], posx+start_position_x, posy, col_32, row_32);
-                draw_ansi_at(&[&RIGHT_INPUT[i]], maxx-right_input_length, posy, col_32, row_32);
+                move_to!(posx, posy);
+                print!("{}", &LEFT_INPUT[i]);
+                move_to!(posx+start_position_x, posy);
+                print!("{}", &repeated_middle[i]);
+                move_to!(maxx-right_input_length, posy);
+                print!("{}", &RIGHT_INPUT[i]);
             }
-
-            move_to!(posx+start_position_x+1,posy+START_POSITION_Y+START_POSITION_Y);
+            clear_attr!();
+            move_to!(posx+start_position_x+1,posy+START_POSITION_Y);
             print!("{}", BEFORE_INPUT_START);
-
             out_password = read_password(length);
         }
     },
@@ -220,6 +222,7 @@ fn show_input_screen() -> String {
         out_password = read_password(20);
     }
     }
+    clear_attr!();
     out_password
 }
 
@@ -238,6 +241,7 @@ fn resolve_device_path_from_uuid(uuid: &str) -> std::io::Result<String> {
 fn main() {
     if DEBUG {
         show_input_screen();
+        println!("\nencrypttui: I'm on debugging mode. Exit without call cryptsetup.");
         return;
     }
     
