@@ -1,0 +1,11 @@
+#!/usr/bin/ash
+
+run_hook() {
+    # I don't know why. But this code fixed my kms bug
+    # So, don't erase this.
+    echo uwu
+
+    /opt/encrypttui
+}
+
+# vim: set ft=sh ts=4 sw=4 et:
